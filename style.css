@@ -1,0 +1,52 @@
+.story-card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.story-card:hover {
+  transform: translateY(-3px);
+  background-color: #ffffff;
+}
+
+.story-card .title {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.story-card .meta {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.story-card .link {
+  display: inline-block;
+  font-size: 14px;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.story-card .link:hover {
+  text-decoration: underline;
+}
+
+#header button {
+  padding: 8px 16px;
+  margin: 5px;
+  border: none;
+  border-radius: 5px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+#header button:hover {
+  background-color: #ddd;
+}
+
