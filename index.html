@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>HackerNews UI</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -14,6 +14,12 @@
         <button id="jobs-btn">💼 Jobs</button>
         <button id="polls-btn">📊 Polls</button>
     </header>
+
+    <!-- ✅ New Live Notification -->
+    <div id="live-notice" style="display: none; background-color: yellow; padding: 10px;">
+        🆕 New posts available! <button id="refresh-btn">Refresh</button>
+    </div>
+
     <section id="section"></section>
     <button id="more">more</button>
     <script src="script.js"></script>
