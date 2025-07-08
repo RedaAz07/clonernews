@@ -8,34 +8,57 @@ const pollsBtn = document.getElementById("polls-btn")
 
 const liveNotice = document.getElementById("live-notice")
 const refreshBtn = document.getElementById("refresh-btn")
+const newCountSpan = document.getElementById("new-count")
 
 let ids = []
 let start = 0
 let size = 20
 let end = size
 let last = 0
-let currentType = "topstories" 
+let currentType = "topstories"
+let newPostsCount = 0
 
-storiesBtn.addEventListener("click", async () => {
+function debounce(func, delay) {
+    let timeoutId
+    return function (...args) {
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(() => func.apply(this, args), delay)
+    }
+}
+
+const debouncedStoriesHandler = debounce(async () => {
+    setActiveButton(storiesBtn)
     currentType = "topstories"
     ids = await getTypeIds(currentType)
     resetAndReload()
-})
+}, 500)
 
-jobsBtn.addEventListener("click", async () => {
+const debouncedJobsHandler = debounce(async () => {
+    setActiveButton(jobsBtn)
     currentType = "jobstories"
     ids = await getTypeIds(currentType)
     resetAndReload()
-})
+}, 500)
 
-pollsBtn.addEventListener("click", async () => {
+const debouncedPollsHandler = debounce(async () => {
+    setActiveButton(pollsBtn)
     currentType = "polls"
     ids = await getPolls()
     resetAndReload()
-})
+}, 500)
+
+function setActiveButton(activeBtn) {
+    [storiesBtn, jobsBtn, pollsBtn].forEach(btn => btn.classList.remove('active'))
+    activeBtn.classList.add('active')
+}
+
+storiesBtn.addEventListener("click", debouncedStoriesHandler)
+jobsBtn.addEventListener("click", debouncedJobsHandler)
+pollsBtn.addEventListener("click", debouncedPollsHandler)
 
 refreshBtn.addEventListener("click", async () => {
     liveNotice.style.display = "none"
+    newPostsCount = 0
     if (currentType === "polls") {
         ids = await getPolls()
     } else {
@@ -64,14 +87,18 @@ async function getTypeIds(type) {
 async function getPolls() {
     try {
         const res = await fetch("https://hacker-news.firebaseio.com/v0/maxitem.json")
-        const all = await res.json()
-        last = all
+        const maxId = await res.json()
+        last = maxId
         let fetched = []
-        for (let i = all; i >= all - 200; i--) {
-            let post = await story(i)
-            if (post && post.type === "poll") {
-                fetched.push(i)
-                if (fetched.length >= 30) break
+
+        for (let i = maxId; i >= maxId - 1000 && fetched.length < 200; i--) {
+            try {
+                let post = await story(i)
+                if (post && post.type === "poll") {
+                    fetched.push(i)
+                }
+            } catch (e) {
+                continue
             }
         }
         return fetched
@@ -85,10 +112,50 @@ async function story(id) {
     try {
         let res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
         if (!res.ok) throw new Error(res.statusText)
-        return await res.json()
+        const data = await res.json()
+        return data
     } catch (error) {
         console.log(error)
-        return {}
+        return null
+    }
+}
+
+async function loadComments(commentIds) {
+    const comments = []
+    for (const id of commentIds.slice(0, 5)) { 
+        try {
+            const comment = await story(id)
+            if (comment && comment.text) {
+                comments.push(comment)
+            }
+        } catch (e) {
+            continue
+        }
+    }
+    return comments
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp * 1000)
+    return date.toLocaleString()
+}
+
+async function toggleComments(storyId, commentsSection, commentIds) {
+    if (commentsSection.style.display === "none") {
+        commentsSection.innerHTML = '<div class="loading">Loading comments...</div>'
+        commentsSection.style.display = "block"
+
+        const comments = await loadComments(commentIds)
+        commentsSection.innerHTML = comments.length > 0
+            ? comments.map(comment => `
+                        <div class="comment">
+                            <div class="comment-meta">By ${comment.by} • ${formatTime(comment.time)}</div>
+                            <div class="comment-text">${comment.text}</div>
+                        </div>
+                    `).join('')
+            : '<div class="comment">No comments available</div>'
+    } else {
+        commentsSection.style.display = "none"
     }
 }
 
@@ -97,21 +164,45 @@ async function reload() {
 
     for (const ele of batch) {
         let res = await story(ele)
+        if (!res) continue
+
         const div = document.createElement("div")
         div.className = "story-card"
+
+        const commentsCount = res.kids ? res.kids.length : 0
+        const hasComments = commentsCount > 0
+
         div.innerHTML = `
-            <h2 class="title">${res.title}</h2>
-            <p class="meta">By <strong>${res.by}</strong> | 💬 ${res.kids !== undefined ? res.kids.length : 0} comments | ⭐ ${res.score || 0}</p>
-            <a class="link" href="${res.url || '#'}" target="_blank">🔗 Visit</a>
-        `
+                    <h2 class="title">${res.title || 'No Title'}</h2>
+                    <p class="meta">
+                        By <strong>${res.by || 'Unknown'}</strong> | 
+                        ${hasComments ?
+                `<button class="comment-toggle" onclick="toggleComments(${res.id}, this.parentElement.parentElement.querySelector('.comments-section'), ${JSON.stringify(res.kids || [])})">💬 ${commentsCount} comments</button>` :
+                `💬 ${commentsCount} comments`
+            } | 
+                        ⭐ ${res.score || 0} | 
+                        🕒 ${formatTime(res.time)}
+                    </p>
+                    ${res.url ? `<a class="link" href="${res.url}" target="_blank">🔗 Visit</a>` : ''}
+                    ${res.text ? `<div style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 3px;">${res.text}</div>` : ''}
+                    ${hasComments ? '<div class="comments-section" style="display: none;"></div>' : ''}
+                `
         section.appendChild(div)
     }
 }
 
+window.toggleComments = toggleComments
+
 button.addEventListener("click", async () => {
+    button.disabled = true
+    button.textContent = "Loading..."
+
     start = end
     end += size
     await reload()
+
+    button.disabled = false
+    button.textContent = "Load More"
 })
 
 window.onload = async () => {
@@ -123,7 +214,10 @@ window.onload = async () => {
         try {
             const max = await getMaxItem()
             if (max > last) {
+                newPostsCount = max - last
+                newCountSpan.textContent = newPostsCount
                 liveNotice.style.display = "block"
+                last = max
             }
         } catch (e) {
             console.log("Live check error:", e)

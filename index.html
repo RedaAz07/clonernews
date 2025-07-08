@@ -10,18 +10,18 @@
 
 <body>
     <header id="header">
-        <button id="stories-btn">📚 Stories</button>
+        <button id="stories-btn" class="active">📚 Stories</button>
         <button id="jobs-btn">💼 Jobs</button>
         <button id="polls-btn">📊 Polls</button>
     </header>
 
-    <!-- ✅ New Live Notification -->
-    <div id="live-notice" style="display: none; background-color: yellow; padding: 10px;">
-        🆕 New posts available! <button id="refresh-btn">Refresh</button>
+    <div id="live-notice" style="display: none;">
+        🆕 <span id="new-count">0</span> new posts available! <button id="refresh-btn">Refresh</button>
     </div>
 
     <section id="section"></section>
-    <button id="more">more</button>
+    <button id="more">Load More</button>
+
     <script src="script.js"></script>
 </body>
 
