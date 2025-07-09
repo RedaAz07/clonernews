@@ -1,11 +1,7 @@
 const header = document.getElementById("header")
 const section = document.getElementById("section")
 const button = document.getElementById("more")
-
-const storiesBtn = document.getElementById("stories-btn")
-const jobsBtn = document.getElementById("jobs-btn")
-const pollsBtn = document.getElementById("polls-btn")
-
+const buttons = document.querySelectorAll("#header button")
 const liveNotice = document.getElementById("live-notice")
 const refreshBtn = document.getElementById("refresh-btn")
 const newCountSpan = document.getElementById("new-count")
@@ -26,40 +22,34 @@ function debounce(func, delay) {
     }
 }
 
-const debouncedStoriesHandler = debounce(async () => {
-    setActiveButton(storiesBtn)
-    currentType = "topstories"
-    ids = await getTypeIds(currentType)
+
+const debouncehandler = debounce(async (event) =>  {
+    const bnt = event.target
+    setActiveButton(bnt)
+    currentType = bnt.dataset.type
+      if (currentType === "polls") {
+    section.innerHTML = ""
+
+        ids = await getPolls()
+    } else {
+        ids = await getTypeIds(currentType)
+    }
     resetAndReload()
 }, 500)
 
-const debouncedJobsHandler = debounce(async () => {
-    setActiveButton(jobsBtn)
-    currentType = "jobstories"
-    ids = await getTypeIds(currentType)
-    resetAndReload()
-}, 500)
 
-const debouncedPollsHandler = debounce(async () => {
-    setActiveButton(pollsBtn)
-    currentType = "polls"
-    ids = await getPolls()
-    resetAndReload()
-}, 500)
+buttons.forEach(bnt => bnt.addEventListener("click", debouncehandler))
+
 
 function setActiveButton(activeBtn) {
-    [storiesBtn, jobsBtn, pollsBtn].forEach(btn => btn.classList.remove('active'))
+    buttons.forEach(btn => btn.classList.remove('active'))
     activeBtn.classList.add('active')
 }
-
-storiesBtn.addEventListener("click", debouncedStoriesHandler)
-jobsBtn.addEventListener("click", debouncedJobsHandler)
-pollsBtn.addEventListener("click", debouncedPollsHandler)
-
 refreshBtn.addEventListener("click", async () => {
     liveNotice.style.display = "none"
     newPostsCount = 0
     if (currentType === "polls") {
+
         ids = await getPolls()
     } else {
         ids = await getTypeIds(currentType)
@@ -206,23 +196,22 @@ button.addEventListener("click", async () => {
 })
 
 window.onload = async () => {
-    ids = await getTypeIds("topstories")
-    last = await getMaxItem()
-    await reload()
-
-    setInterval(async () => {
-        try {
-            const max = await getMaxItem()
-            if (max > last) {
-                newPostsCount = max - last
-                newCountSpan.textContent = newPostsCount
-                liveNotice.style.display = "block"
-                last = max
-            }
-        } catch (e) {
-            console.log("Live check error:", e)
-        }
-    }, 5000)
+  ids = await getTypeIds("topstories")  
+  last = await getMaxItem()              
+  await reload()                       
+  setInterval(async () => {
+    try {
+      const max = await getMaxItem()
+      if (max > last) {
+        newPostsCount = max - last
+        newCountSpan.textContent = newPostsCount  
+        liveNotice.style.display = "block"         
+        last = max                                  
+      }
+    } catch (e) {
+      console.log("Live check error:", e)
+    }
+  }, 5000)
 }
 
 async function getMaxItem() {
