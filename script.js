@@ -9,12 +9,10 @@ let ids = []
 let start = 0
 let size = 20
 let end = size
-
 let postIndex =   0
 let last = 0
 let currentType = "topstories"
 let newPostsCount = 0
-
 function debounce(func, delay) {
     let timeoutId
     return function (...args) {
@@ -22,10 +20,10 @@ function debounce(func, delay) {
         timeoutId = setTimeout(() => func.apply(this, args), delay)
     }
 }
-
 const debouncehandler = debounce(async (event) => {
     const bnt = event.target
     setActiveButton(bnt)
+    liveNotice.style.display = "none"
     currentType = bnt.dataset.type
     if (currentType === "polls") {
         section.innerHTML = ""
@@ -36,11 +34,7 @@ const debouncehandler = debounce(async (event) => {
     }
     resetAndReload()
 }, 500)
-
-
 buttons.forEach(bnt => bnt.addEventListener("click", debouncehandler))
-
-
 function setActiveButton(activeBtn) {
     buttons.forEach(btn => btn.classList.remove('active'))
     activeBtn.classList.add('active')
@@ -122,7 +116,7 @@ async function loadComments(commentIds) {
             continue
         }
     }
-    return comments
+    return comments.sort((a,b)=>{ return b.time - a.time})
 }
 
 function formatTime(timestamp) {
@@ -131,6 +125,7 @@ function formatTime(timestamp) {
 }
 
 async function toggleComments(storyId, commentsSection, commentIds) {
+
     if (commentsSection.style.display === "none") {
         commentsSection.innerHTML = '<div class="loading">Loading comments...</div>'
         commentsSection.style.display = "block"
@@ -150,6 +145,7 @@ async function toggleComments(storyId, commentsSection, commentIds) {
 }
 
 async function reload() {
+    ids.sort((a, b) => {return b-a})
     let batch = ids.slice(start, end)
 
     for (const ele of batch) {
@@ -204,7 +200,6 @@ window.addEventListener("scroll", throttle(async () => {
         await reload();
     
 }, 5000));
-
 
 
 window.onload = async () => {
