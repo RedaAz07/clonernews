@@ -10,6 +10,8 @@ let ids = []
 let start = 0
 let size = 20
 let end = size
+
+let postIndex =   0
 let last = 0
 let currentType = "topstories"
 let newPostsCount = 0
@@ -22,13 +24,12 @@ function debounce(func, delay) {
     }
 }
 
-
-const debouncehandler = debounce(async (event) =>  {
+const debouncehandler = debounce(async (event) => {
     const bnt = event.target
     setActiveButton(bnt)
     currentType = bnt.dataset.type
-      if (currentType === "polls") {
-    section.innerHTML = ""
+    if (currentType === "polls") {
+        section.innerHTML = ""
 
         ids = await getPolls()
     } else {
@@ -112,7 +113,7 @@ async function story(id) {
 
 async function loadComments(commentIds) {
     const comments = []
-    for (const id of commentIds.slice(0, 5)) { 
+    for (const id of commentIds) {
         try {
             const comment = await story(id)
             if (comment && comment.text) {
@@ -155,7 +156,6 @@ async function reload() {
     for (const ele of batch) {
         let res = await story(ele)
         if (!res) continue
-
         const div = document.createElement("div")
         div.className = "story-card"
 
@@ -183,35 +183,48 @@ async function reload() {
 
 window.toggleComments = toggleComments
 
-button.addEventListener("click", async () => {
-    button.disabled = true
-    button.textContent = "Loading..."
 
-    start = end
-    end += size
-    await reload()
+function throttle(fn, wait) {
+    let isThrottled = false;
+    return function (...args) {
+        if (!isThrottled) {
+            fn(...args);
+            isThrottled = true;
+            setTimeout(() => {
+                isThrottled = false;
+            }, wait);
+        }
+    };
+}
 
-    button.disabled = false
-    button.textContent = "Load More"
-})
+window.addEventListener("scroll", throttle(async () => {
+    const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+
+        start = end;
+        end += size;
+        await reload();
+    
+}, 5000));
+
+
 
 window.onload = async () => {
-  ids = await getTypeIds("topstories")  
-  last = await getMaxItem()              
-  await reload()                       
-  setInterval(async () => {
-    try {
-      const max = await getMaxItem()
-      if (max > last) {
-        newPostsCount = max - last
-        newCountSpan.textContent = newPostsCount  
-        liveNotice.style.display = "block"         
-        last = max                                  
-      }
-    } catch (e) {
-      console.log("Live check error:", e)
-    }
-  }, 5000)
+    ids = await getTypeIds("topstories")
+    last = await getMaxItem()
+    await reload()
+    setInterval(async () => {
+        try {
+            const max = await getMaxItem()
+            if (max > last) {
+                newPostsCount = max - last
+                newCountSpan.textContent = newPostsCount
+                liveNotice.style.display = "block"
+                last = max
+            }
+        } catch (e) {
+            console.log("Live check error:", e)
+        }
+    }, 5000)
 }
 
 async function getMaxItem() {
