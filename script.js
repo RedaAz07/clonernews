@@ -1,6 +1,5 @@
 const header = document.getElementById("header")
 const section = document.getElementById("section")
-const button = document.getElementById("more")
 const buttons = document.querySelectorAll("#header button")
 const liveNotice = document.getElementById("live-notice")
 const refreshBtn = document.getElementById("refresh-btn")
